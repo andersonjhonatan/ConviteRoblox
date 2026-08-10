@@ -1,74 +1,16 @@
 'use client';
-
-import { useEffect, useState } from 'react';
-import { CalendarDays, Clock3, MapPin, CheckCircle2, Gamepad2 } from 'lucide-react';
-
-export default function Home() {
-  const [loading, setLoading] = useState(0);
-  const [entered, setEntered] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-
-  useEffect(() => {
-    if (entered) return;
-    const timer = setInterval(() => setLoading(v => v >= 100 ? 100 : v + 4), 65);
-    return () => clearInterval(timer);
-  }, [entered]);
-
-  return (
-    <main>
-      {!entered && <section className="loader-screen">
-        <div className="loader-logo"><span>R</span></div>
-        <p className="eyebrow">CONECTANDO AO SERVIDOR...</p>
-        <h1>A aventura de Lucas<br/><b>está carregando</b></h1>
-        <div className="bar"><i style={{width:`${loading}%`}} /></div>
-        <div className="load-meta"><span>CARREGANDO MAPA: ILHAS DA AVENTURA</span><strong>{loading}%</strong></div>
-        <button className="play" disabled={loading < 100} onClick={() => setEntered(true)}>{loading < 100 ? 'PREPARANDO...' : 'ENTRAR NO JOGO'}</button>
-      </section>}
-
-      <section className="hero">
-        <div className="sky"><div className="cloud c1"/><div className="cloud c2"/></div>
-        <div className="hud"><span><Gamepad2 size={18}/> LUCAS_WORLD</span><span className="online">● SERVIDOR ONLINE</span></div>
-        <div className="hero-copy">
-          <p className="tag">MISSÃO ESPECIAL DESBLOQUEADA</p>
-          <h2>LUCAS<br/><em>8 ANOS</em></h2>
-          <p>Prepare seu avatar. Uma nova aventura vai começar entre ilhas, tesouros e desafios.</p>
-          <a href="#missao" className="primary">ACEITAR MISSÃO</a>
-        </div>
-        <div className="islands" aria-hidden="true">
-          <div className="island back"><span>🏝️</span></div>
-          <div className="island main-island"><span>🏰</span><b className="avatar">😎</b></div>
-          <div className="island side"><span>🌴</span></div>
-        </div>
-      </section>
-
-      <section id="missao" className="mission section">
-        <p className="tag">DETALHES DA MISSÃO</p><h3>VOCÊ FOI CONVOCADO!</h3>
-        <p className="intro">Lucas chegou ao nível 8 e precisa da sua equipe para completar a maior aventura do mapa.</p>
-        <div className="cards">
-          <article><CalendarDays/><small>DATA DA PARTIDA</small><strong>22 AGO</strong><span>Sábado</span></article>
-          <article><Clock3/><small>HORÁRIO</small><strong>16:00</strong><span>Até 20:00</span></article>
-          <article><MapPin/><small>LOCAL</small><strong>PLAY ARENA</strong><span>Av. das Aventuras, 120</span></article>
-        </div>
-      </section>
-
-      <section className="map section">
-        <p className="tag">MAPA DA AVENTURA</p><h3>ESCOLHA SUA ILHA</h3>
-        <div className="map-grid">
-          <article><div>🌴</div><b>Ilha Spawn</b><span>Onde a equipe se encontra.</span></article>
-          <article><div>💎</div><b>Ilha do Tesouro</b><span>Doces e recompensas raras.</span></article>
-          <article><div>🎂</div><b>Ilha do Boss</b><span>O desafio final: o parabéns!</span></article>
-        </div>
-      </section>
-
-      <section className="rsvp section">
-        <div className="quest-box">
-          <p className="tag">OBJETIVO PRINCIPAL</p><h3>CONFIRME SUA PRESENÇA</h3>
-          <p>Sua vaga no servidor está reservada. Confirme para entrar na equipe do Lucas.</p>
-          {!confirmed ? <button className="confirm" onClick={() => setConfirmed(true)}>✓ CONFIRMAR PRESENÇA</button> : <div className="success"><CheckCircle2/> PRESENÇA CONFIRMADA!<small>Você entrou para a equipe.</small></div>}
-          <small className="deadline">CONFIRME ATÉ 18 DE AGOSTO</small>
-        </div>
-      </section>
-      <footer>Desenvolvido por Anderson Jhonatan da K2 Tech</footer>
-    </main>
-  );
-}
+import {useEffect,useState} from 'react';
+import {CalendarDays,Clock3,MapPin,CheckCircle2,Gamepad2,Users,Trophy,ChevronDown} from 'lucide-react';
+const avatars=[['Jordan','Explorador'],['Robin','Caçador de tesouros'],['Billie','Mestre do Obby']];
+export default function Home(){
+ const [loading,setLoading]=useState(0),[entered,setEntered]=useState(false),[confirmed,setConfirmed]=useState(false),[player,setPlayer]=useState('');
+ useEffect(()=>{if(entered)return;const t=setInterval(()=>setLoading(v=>Math.min(100,v+2)),45);return()=>clearInterval(t)},[entered]);
+ return <main>
+ {!entered&&<section className="loader-screen"><div className="rbx-mark"><i/></div><p className="eyebrow">LUCAS_WORLD • SERVIDOR PRIVADO</p><h1>CARREGANDO<br/><b>ILHAS DA AVENTURA</b></h1><div className="bar"><i style={{width:`${loading}%`}}/></div><div className="load-meta"><span>{loading<35?'BAIXANDO MAPA...':loading<70?'CARREGANDO AVATARES...':loading<100?'PREPARANDO MISSÃO...':'SERVIDOR PRONTO'}</span><strong>{loading}%</strong></div><button className="play" disabled={loading<100} onClick={()=>setEntered(true)}>{loading<100?'CONECTANDO...':'▶ ENTRAR NO JOGO'}</button></section>}
+ <section className="hero"><div className="sun"/><div className="cloud c1"/><div className="cloud c2"/><nav className="hud"><span><Gamepad2/> LUCAS_WORLD</span><span><Users/> 08/20 JOGADORES</span><span className="online">● ONLINE</span></nav><div className="hero-copy"><p className="tag">★ EVENTO LIMITADO • NÍVEL 8</p><h2>LUCAS<br/><em>WORLD</em></h2><p>Uma festa virou mapa. Um aniversário virou missão. Equipe seu avatar e venha explorar as ilhas com o Lucas.</p><a href="#missao" className="primary">ACEITAR MISSÃO</a></div><div className="world" aria-hidden="true"><div className="float-island i1"><div className="tree">♣</div><div className="block-avatar"><i/><b/><em/></div></div><div className="float-island i2"><div className="crystal">◆</div></div><div className="float-island i3"><div className="chest">▣</div></div></div><a className="scroll" href="#missao"><ChevronDown/></a></section>
+ <section id="missao" className="mission section"><p className="tag">QUEST #01 • CONVITE DESBLOQUEADO</p><h3>VOCÊ ENTROU NA EQUIPE</h3><p className="intro">Lucas alcançou o <b>nível 8</b>. Para celebrar, abriu um servidor especial e convidou os melhores jogadores para uma aventura fora da tela.</p><div className="profile"><div className="portrait"><div className="block-avatar big"><i/><b/><em/></div><span>LV. 8</span></div><div><small>ANIVERSARIANTE</small><strong>LUCAS</strong><p>@LucasWorld • Explorador das Ilhas</p></div></div><div className="cards"><article><CalendarDays/><small>DATA DA PARTIDA</small><strong>22 AGO</strong><span>Sábado</span></article><article><Clock3/><small>HORÁRIO DO SERVIDOR</small><strong>16:00</strong><span>até 20:00</span></article><article><MapPin/><small>SPAWN POINT</small><strong>PLAY ARENA</strong><span>Av. das Aventuras, 120</span></article></div></section>
+ <section className="squad section"><p className="tag">ESCOLHA SEU ESTILO</p><h3>AVATARES DA EQUIPE</h3><p className="intro">Inspirados nos estilos de avatar recomendados pelo Roblox para experiências promocionais.</p><div className="avatar-grid">{avatars.map((a,i)=><article key={a[0]}><div className={'avatar-render a'+i}><div className="head"/><div className="body"/><div className="arm l"/><div className="arm r"/><div className="leg l"/><div className="leg r"/></div><b>{a[0]}</b><span>{a[1]}</span></article>)}</div></section>
+ <section className="map section"><p className="tag">WORLD MAP • 3 ÁREAS</p><h3>ILHAS DA AVENTURA</h3><div className="route"><article><span>01</span><div className="mini-island jungle">♣</div><b>ILHA SPAWN</b><small>Encontre sua equipe</small></article><i>••••••</i><article><span>02</span><div className="mini-island gem">◆</div><b>CAVERNA CRISTAL</b><small>Encontre o tesouro</small></article><i>••••••</i><article><span>03</span><div className="mini-island cake">★</div><b>ILHA DO BOSS</b><small>Desbloqueie o parabéns</small></article></div></section>
+ <section className="rsvp section"><div className="quest-box"><Trophy className="trophy"/><p className="tag">MISSÃO FINAL</p><h3>GARANTA SUA VAGA<br/>NO SERVIDOR</h3><p>Digite seu nome de jogador e confirme presença para entrar oficialmente na equipe do Lucas.</p>{!confirmed?<><label>SEU NOME<input value={player} onChange={e=>setPlayer(e.target.value)} placeholder="Ex.: Gabriel"/></label><button className="confirm" onClick={()=>setConfirmed(true)}>✓ CONFIRMAR PRESENÇA</button></>:<div className="success"><CheckCircle2/><strong>MISSÃO CONCLUÍDA!</strong><small>{player||'Jogador'}, sua vaga foi confirmada.</small></div>}<small className="deadline">CONFIRME ATÉ 18 DE AGOSTO • VAGAS LIMITADAS</small></div></section>
+ <footer><b>K2 TECH</b><span>Desenvolvido por Anderson Jhonatan da K2 Tech</span><small>Projeto demonstrativo não afiliado à Roblox Corporation.</small></footer>
+ </main>}
