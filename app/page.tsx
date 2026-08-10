@@ -1,16 +1,449 @@
-'use client';
-import {useEffect,useState} from 'react';
-import {CalendarDays,Clock3,MapPin,CheckCircle2,Gamepad2,Users,Trophy,ChevronDown} from 'lucide-react';
-const avatars=[['Jordan','Explorador'],['Robin','Caçador de tesouros'],['Billie','Mestre do Obby']];
-export default function Home(){
- const [loading,setLoading]=useState(0),[entered,setEntered]=useState(false),[confirmed,setConfirmed]=useState(false),[player,setPlayer]=useState('');
- useEffect(()=>{if(entered)return;const t=setInterval(()=>setLoading(v=>Math.min(100,v+2)),45);return()=>clearInterval(t)},[entered]);
- return <main>
- {!entered&&<section className="loader-screen"><div className="rbx-mark"><i/></div><p className="eyebrow">LUCAS_WORLD • SERVIDOR PRIVADO</p><h1>CARREGANDO<br/><b>ILHAS DA AVENTURA</b></h1><div className="bar"><i style={{width:`${loading}%`}}/></div><div className="load-meta"><span>{loading<35?'BAIXANDO MAPA...':loading<70?'CARREGANDO AVATARES...':loading<100?'PREPARANDO MISSÃO...':'SERVIDOR PRONTO'}</span><strong>{loading}%</strong></div><button className="play" disabled={loading<100} onClick={()=>setEntered(true)}>{loading<100?'CONECTANDO...':'▶ ENTRAR NO JOGO'}</button></section>}
- <section className="hero"><div className="sun"/><div className="cloud c1"/><div className="cloud c2"/><nav className="hud"><span><Gamepad2/> LUCAS_WORLD</span><span><Users/> 08/20 JOGADORES</span><span className="online">● ONLINE</span></nav><div className="hero-copy"><p className="tag">★ EVENTO LIMITADO • NÍVEL 8</p><h2>LUCAS<br/><em>WORLD</em></h2><p>Uma festa virou mapa. Um aniversário virou missão. Equipe seu avatar e venha explorar as ilhas com o Lucas.</p><a href="#missao" className="primary">ACEITAR MISSÃO</a></div><div className="world" aria-hidden="true"><div className="float-island i1"><div className="tree">♣</div><div className="block-avatar"><i/><b/><em/></div></div><div className="float-island i2"><div className="crystal">◆</div></div><div className="float-island i3"><div className="chest">▣</div></div></div><a className="scroll" href="#missao"><ChevronDown/></a></section>
- <section id="missao" className="mission section"><p className="tag">QUEST #01 • CONVITE DESBLOQUEADO</p><h3>VOCÊ ENTROU NA EQUIPE</h3><p className="intro">Lucas alcançou o <b>nível 8</b>. Para celebrar, abriu um servidor especial e convidou os melhores jogadores para uma aventura fora da tela.</p><div className="profile"><div className="portrait"><div className="block-avatar big"><i/><b/><em/></div><span>LV. 8</span></div><div><small>ANIVERSARIANTE</small><strong>LUCAS</strong><p>@LucasWorld • Explorador das Ilhas</p></div></div><div className="cards"><article><CalendarDays/><small>DATA DA PARTIDA</small><strong>22 AGO</strong><span>Sábado</span></article><article><Clock3/><small>HORÁRIO DO SERVIDOR</small><strong>16:00</strong><span>até 20:00</span></article><article><MapPin/><small>SPAWN POINT</small><strong>PLAY ARENA</strong><span>Av. das Aventuras, 120</span></article></div></section>
- <section className="squad section"><p className="tag">ESCOLHA SEU ESTILO</p><h3>AVATARES DA EQUIPE</h3><p className="intro">Inspirados nos estilos de avatar recomendados pelo Roblox para experiências promocionais.</p><div className="avatar-grid">{avatars.map((a,i)=><article key={a[0]}><div className={'avatar-render a'+i}><div className="head"/><div className="body"/><div className="arm l"/><div className="arm r"/><div className="leg l"/><div className="leg r"/></div><b>{a[0]}</b><span>{a[1]}</span></article>)}</div></section>
- <section className="map section"><p className="tag">WORLD MAP • 3 ÁREAS</p><h3>ILHAS DA AVENTURA</h3><div className="route"><article><span>01</span><div className="mini-island jungle">♣</div><b>ILHA SPAWN</b><small>Encontre sua equipe</small></article><i>••••••</i><article><span>02</span><div className="mini-island gem">◆</div><b>CAVERNA CRISTAL</b><small>Encontre o tesouro</small></article><i>••••••</i><article><span>03</span><div className="mini-island cake">★</div><b>ILHA DO BOSS</b><small>Desbloqueie o parabéns</small></article></div></section>
- <section className="rsvp section"><div className="quest-box"><Trophy className="trophy"/><p className="tag">MISSÃO FINAL</p><h3>GARANTA SUA VAGA<br/>NO SERVIDOR</h3><p>Digite seu nome de jogador e confirme presença para entrar oficialmente na equipe do Lucas.</p>{!confirmed?<><label>SEU NOME<input value={player} onChange={e=>setPlayer(e.target.value)} placeholder="Ex.: Gabriel"/></label><button className="confirm" onClick={()=>setConfirmed(true)}>✓ CONFIRMAR PRESENÇA</button></>:<div className="success"><CheckCircle2/><strong>MISSÃO CONCLUÍDA!</strong><small>{player||'Jogador'}, sua vaga foi confirmada.</small></div>}<small className="deadline">CONFIRME ATÉ 18 DE AGOSTO • VAGAS LIMITADAS</small></div></section>
- <footer><b>K2 TECH</b><span>Desenvolvido por Anderson Jhonatan da K2 Tech</span><small>Projeto demonstrativo não afiliado à Roblox Corporation.</small></footer>
- </main>}
+"use client";
+
+import Image from "next/image";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { invitationConfig as config } from "./invitation-config";
+
+const eventStart = new Date(config.event.startsAt);
+const eventEnd = new Date(config.event.endsAt);
+const eventTimestamp = eventStart.getTime();
+const missions = config.missions;
+
+const formatEventPart = (options: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat("pt-BR", { ...options, timeZone: config.event.timeZone }).format(eventStart);
+
+const eventDisplay = {
+  day: formatEventPart({ day: "2-digit" }),
+  month: formatEventPart({ month: "long" }).toLocaleUpperCase("pt-BR"),
+  weekday: formatEventPart({ weekday: "long" }).toLocaleUpperCase("pt-BR"),
+  year: formatEventPart({ year: "numeric" }),
+  startTime: formatEventPart({ hour: "2-digit", minute: "2-digit", hour12: false }),
+  endTime: new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: config.event.timeZone,
+  }).format(eventEnd),
+};
+
+type Countdown = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+};
+
+const emptyCountdown: Countdown = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+const countdownLabels: Record<keyof Countdown, string> = {
+  days: "DIAS",
+  hours: "HORAS",
+  minutes: "MIN",
+  seconds: "SEG",
+};
+
+export default function Home() {
+  const [phase, setPhase] = useState<"loading" | "ready" | "playing">("loading");
+  const [progress, setProgress] = useState(0);
+  const [soundOn, setSoundOn] = useState(false);
+  const [countdown, setCountdown] = useState(emptyCountdown);
+  const [collected, setCollected] = useState<number[]>([]);
+  const [collecting, setCollecting] = useState<number | null>(null);
+  const [heroPosition, setHeroPosition] = useState({ left: "8%", top: "72%" });
+  const [rsvpPrepared, setRsvpPrepared] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [partySize, setPartySize] = useState("1");
+  const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const timer = setInterval(() => {
+      setProgress((current) => {
+        const next = Math.min(100, current + (current < 72 ? 4 : 2));
+        if (next === 100) {
+          clearInterval(timer);
+          setTimeout(() => setPhase("ready"), 280);
+        }
+        return next;
+      });
+    }, 70);
+    return () => clearInterval(timer);
+  }, [phase]);
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const distance = Math.max(0, eventTimestamp - Date.now());
+      setCountdown({
+        days: Math.floor(distance / 86_400_000),
+        hours: Math.floor((distance / 3_600_000) % 24),
+        minutes: Math.floor((distance / 60_000) % 60),
+        seconds: Math.floor((distance / 1_000) % 60),
+      });
+    };
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pendingTimer.current) clearTimeout(pendingTimer.current);
+    };
+  }, []);
+
+  const playTone = (frequency = 520) => {
+    if (!soundOn || typeof window === "undefined") return;
+    const AudioContextClass = window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.frequency.value = frequency;
+    oscillator.type = "square";
+    gain.gain.setValueAtTime(0.06, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.14);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.addEventListener("ended", () => void context.close());
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.15);
+  };
+
+  const enterGame = () => {
+    setPhase("playing");
+    setTimeout(() => document.getElementById("inicio")?.focus(), 150);
+  };
+
+  const collectCrystal = (id: number) => {
+    if (collected.includes(id) || collecting !== null) return;
+    const mission = missions.find((item) => item.id === id);
+    if (!mission) return;
+    setCollecting(id);
+    setHeroPosition({ left: mission.left, top: mission.top });
+    playTone(620 + id * 80);
+    pendingTimer.current = setTimeout(() => {
+      setCollected((current) => [...current, id]);
+      setCollecting(null);
+    }, 650);
+  };
+
+  const collectNext = () => {
+    const next = missions.find((mission) => !collected.includes(mission.id));
+    if (next) collectCrystal(next.id);
+  };
+
+  const submitRsvp = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setRsvpPrepared(true);
+    playTone(880);
+  };
+
+  const whatsappText = encodeURIComponent(
+    `Olá! Eu, ${guestName.trim()}, gostaria de confirmar ${partySize} ${partySize === "1" ? "presença" : "presenças"} na aventura do ${config.celebrant.name}! 🎮`,
+  );
+  const whatsappBase = config.rsvp.whatsappNumber
+    ? `https://wa.me/${config.rsvp.whatsappNumber}`
+    : "https://wa.me/";
+  const whatsappUrl = `${whatsappBase}?text=${whatsappText}`;
+
+  return (
+    <main className="site-shell">
+      {phase !== "playing" && (
+        <section className="game-gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+          <div className="gate-grid" aria-hidden="true" />
+          <div className="pixel-cloud cloud-one" aria-hidden="true" />
+          <div className="pixel-cloud cloud-two" aria-hidden="true" />
+          <div className="gate-card">
+            <div className="gate-status">
+              <span className="status-dot" /> SERVIDOR DA FESTA ONLINE
+            </div>
+            <div className="gate-avatars" aria-hidden="true">
+              <Image unoptimized priority src={config.assets.avatarGirl} alt="" width={420} height={420} className="gate-avatar avatar-left" />
+              <Image unoptimized priority src={config.assets.avatarBoy} alt="" width={420} height={420} className="gate-avatar avatar-right" />
+            </div>
+            <p className="eyebrow">UMA NOVA AVENTURA FOI DESBLOQUEADA</p>
+            <h1 className="gate-title" id="gate-title">
+              {config.celebrant.name.toLocaleUpperCase("pt-BR")} <span>{config.celebrant.age}</span>
+            </h1>
+            <p className="gate-subtitle">A jornada pelas ilhas começa agora</p>
+
+            <div className="loading-box">
+              <div className="loading-copy">
+                <span>{phase === "ready" ? "MUNDO CARREGADO!" : "CARREGANDO MAPA..."}</span>
+                <b>{progress}%</b>
+              </div>
+              <div
+                className="loading-track"
+                role="progressbar"
+                aria-label="Carregamento do convite"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+              >
+                <span style={{ width: `${progress}%` }} />
+              </div>
+              <p>{progress < 45 ? "Gerando ilhas" : progress < 85 ? "Conectando jogadores" : "Preparando missão"}</p>
+            </div>
+
+            <button
+              type="button"
+              className={`play-button ${phase === "ready" ? "is-ready" : ""}`}
+              onClick={enterGame}
+              disabled={phase !== "ready"}
+            >
+              <span className="play-icon" aria-hidden="true">▶</span>
+              {phase === "ready" ? "ENTRAR NO JOGO" : "AGUARDE..."}
+            </button>
+            <button type="button" className="skip-gate" onClick={enterGame}>PULAR ABERTURA</button>
+            <p className="gate-hint">Melhor experiência com o som ativado</p>
+            <span className="sr-only" role="status">{phase === "ready" ? "Convite pronto para abrir" : "Carregando convite"}</span>
+          </div>
+        </section>
+      )}
+
+      <div className="invitation-content" inert={phase !== "playing"} aria-hidden={phase !== "playing"}>
+        <a className="skip-link" href="#detalhes">Pular para os detalhes do convite</a>
+        <nav className="game-nav" aria-label="Navegação do convite">
+          <a className="nav-brand" href="#inicio" aria-label="Voltar ao início">
+            <span className="brand-cube" aria-hidden="true" />
+            <span>MISSÃO <b>{config.celebrant.name.toLocaleUpperCase("pt-BR")}</b></span>
+          </a>
+          <div className="nav-actions">
+            <button
+              type="button"
+              onClick={() => setSoundOn((current) => !current)}
+              aria-pressed={soundOn}
+              aria-label={soundOn ? "Desativar efeitos sonoros" : "Ativar efeitos sonoros"}
+            >
+              {soundOn ? "🔊 SOM ON" : "🔇 SOM OFF"}
+            </button>
+            <a href="#presenca">CONFIRMAR</a>
+          </div>
+        </nav>
+
+        <section className="hero" id="inicio" tabIndex={-1}>
+          <div className="hero-backdrop" aria-hidden="true" />
+          <div className="hero-vignette" aria-hidden="true" />
+          <div className="floating-cube cube-a" aria-hidden="true" />
+          <div className="floating-cube cube-b" aria-hidden="true" />
+          <div className="floating-cube cube-c" aria-hidden="true" />
+
+          <div className="hero-copy">
+            <div className="server-tag"><span /> EVENTO ESPECIAL • 1 DIA APENAS</div>
+            <p className="hero-kicker">VOCÊ FOI CONVOCADO PARA A</p>
+            <h2>GRANDE <span>AVENTURA</span></h2>
+            <div className="name-lockup">
+              <small>ANIVERSÁRIO DO</small>
+              <strong>{config.celebrant.name.toLocaleUpperCase("pt-BR")}</strong>
+              <em>LEVEL {config.celebrant.age}</em>
+            </div>
+            <p className="hero-description">
+              Reúna sua equipe, atravesse as ilhas e desbloqueie uma comemoração lendária.
+            </p>
+            <div className="hero-actions">
+              <a href="#missao" className="primary-action"><span aria-hidden="true">▶</span> INICIAR MISSÃO</a>
+              <a href="#detalhes" className="secondary-action">VER DETALHES</a>
+            </div>
+          </div>
+
+          <div className="hero-characters" aria-label="Avatares em estilo Roblox">
+            <Image unoptimized priority src={config.assets.avatarGirl} alt="Avatar feminino em estilo Roblox" width={420} height={420} className="hero-character character-back" />
+            <Image unoptimized priority src={config.assets.avatarBoy} alt="Avatar masculino em estilo Roblox" width={420} height={420} className="hero-character character-front" />
+            <div className="level-badge">LVL<br /><b>{config.celebrant.age}</b></div>
+          </div>
+
+          <a className="scroll-cue" href="#detalhes">
+            <span>EXPLORE O MAPA</span>
+            <i aria-hidden="true">⌄</i>
+          </a>
+        </section>
+
+        <section className="details-section" id="detalhes">
+          <div className="section-heading">
+            <p className="eyebrow">INFORMAÇÕES DA PARTIDA</p>
+            <h2>DETALHES DA <span>MISSÃO</span></h2>
+            <p>Salve as coordenadas e prepare seu melhor avatar.</p>
+          </div>
+
+          <div className="detail-grid">
+            <article className="game-card date-card">
+              <div className="card-icon" aria-hidden="true">📅</div>
+              <p>DATA DO EVENTO</p>
+              <strong>{eventDisplay.day}</strong>
+              <h3>{eventDisplay.month}</h3>
+              <span>{eventDisplay.weekday} • {eventDisplay.year}</span>
+            </article>
+            <article className="game-card time-card">
+              <div className="card-icon" aria-hidden="true">⏱</div>
+              <p>HORÁRIO DE INÍCIO</p>
+              <strong>{eventDisplay.startTime}</strong>
+              <h3>ATÉ {eventDisplay.endTime}</h3>
+              <span>ENTRE NO SERVIDOR NO HORÁRIO</span>
+            </article>
+            <article className="game-card location-card">
+              <div className="card-icon" aria-hidden="true">📍</div>
+              <p>LOCAL DA AVENTURA</p>
+              <strong>ARENA</strong>
+              <h3>{config.event.venueShortName.toLocaleUpperCase("pt-BR")}</h3>
+              <span>{config.event.address.toLocaleUpperCase("pt-BR")}</span>
+              <a href={config.event.mapsUrl} target="_blank" rel="noopener noreferrer">ABRIR LOCALIZAÇÃO ↗</a>
+            </article>
+          </div>
+
+          <div className="countdown-panel" aria-label="Contagem regressiva para a festa">
+            <div>
+              <p>O SERVIDOR ABRE EM</p>
+              <span>CONTAGEM REGRESSIVA</span>
+            </div>
+            {(Object.entries(countdown) as Array<[keyof Countdown, number]>).map(([key, value]) => (
+              <div className="time-unit" key={key}>
+                <strong>{String(value).padStart(2, "0")}</strong>
+                <span>{countdownLabels[key]}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mission-section" id="missao">
+          <div className="section-heading light-heading">
+            <p className="eyebrow">MINIGAME INTERATIVO</p>
+            <h2>RECUPERE OS <span>{missions.length} CRISTAIS</span></h2>
+            <p>Clique nos cristais: seu avatar vai até cada item e coleta de verdade.</p>
+          </div>
+
+          <div className="mission-layout">
+            <div className="mission-map" aria-label="Mapa interativo das ilhas">
+              <div className="map-hud">
+                <span>ILHA 01 • PORTAL DA FLORESTA</span>
+                <b>{collected.length}/{missions.length} CRISTAIS</b>
+              </div>
+              {missions.map((mission) => {
+                const isCollected = collected.includes(mission.id);
+                return (
+                  <button
+                    type="button"
+                    key={mission.id}
+                    className={`crystal crystal-${mission.id} ${isCollected ? "is-collected" : ""}`}
+                    style={{ left: mission.left, top: mission.top }}
+                    onClick={() => collectCrystal(mission.id)}
+                    disabled={isCollected || collecting !== null}
+                    aria-label={isCollected ? `${mission.label} coletado` : `Coletar ${mission.label}`}
+                  >
+                    <span aria-hidden="true">◆</span>
+                  </button>
+                );
+              })}
+              <Image
+                unoptimized
+                src={config.assets.avatarBoy}
+                alt="Avatar se movendo pelo mapa"
+                width={420}
+                height={420}
+                className={`map-avatar ${collecting !== null ? "is-moving" : ""}`}
+                style={{ left: heroPosition.left, top: heroPosition.top }}
+              />
+              {collected.length === missions.length && (
+                <div className="mission-complete" role="status">
+                  <span aria-hidden="true">🏆</span>
+                  <strong>MISSÃO CONCLUÍDA!</strong>
+                  <p>Você desbloqueou a confirmação de presença.</p>
+                  <a href="#presenca">CONFIRMAR AGORA</a>
+                </div>
+              )}
+            </div>
+
+            <aside className="mission-panel">
+              <p className="panel-label">PROGRESSO DA EQUIPE</p>
+              <div
+                className="progress-ring"
+                role="progressbar"
+                aria-label="Cristais coletados"
+                aria-valuemin={0}
+                aria-valuemax={missions.length}
+                aria-valuenow={collected.length}
+                style={{ "--progress": `${collected.length * (360 / missions.length)}deg` } as React.CSSProperties}
+              >
+                <div><strong>{collected.length}</strong><span>DE {missions.length}</span></div>
+              </div>
+              <h3>{collected.length === missions.length ? "PORTAL LIBERADO" : "ENCONTRE OS CRISTAIS"}</h3>
+              <p>
+                {collected.length === missions.length
+                  ? "Excelente, jogador! Sua equipe está pronta para a festa."
+                  : "Explore o cenário e toque em cada cristal brilhante para completar o mapa."}
+              </p>
+              <div className="mission-list" aria-label="Progresso das missões">
+                {missions.map((mission) => (
+                  <span key={mission.id} className={collected.includes(mission.id) ? "done" : ""}>
+                    {collected.includes(mission.id) ? "✓" : mission.id + 1}
+                  </span>
+                ))}
+              </div>
+              <button type="button" onClick={collectNext} disabled={collected.length === missions.length || collecting !== null}>
+                {collecting !== null ? "AVATAR A CAMINHO..." : collected.length === missions.length ? "MISSÃO COMPLETA" : "ENCONTRAR PRÓXIMO"}
+              </button>
+            </aside>
+          </div>
+          <p className="asset-note">Cenário demonstrativo inspirado em experiências disponíveis na plataforma Roblox.</p>
+        </section>
+
+        <section className="rsvp-section" id="presenca">
+          <div className="rsvp-visual" aria-hidden="true">
+            <div className="rsvp-image" />
+            <Image unoptimized src={config.assets.avatarAlt} alt="" width={420} height={420} />
+            <span className="invite-ticket">CONVITE<br /><b>VIP</b></span>
+          </div>
+
+          <div className="rsvp-card">
+            {!rsvpPrepared ? (
+              <>
+                <p className="eyebrow">ÚLTIMA FASE</p>
+                <h2>A EQUIPE PODE <span>CONTAR COM VOCÊ?</span></h2>
+                <p>Prepare sua resposta e envie pelo WhatsApp para concluir a confirmação.</p>
+                <form onSubmit={submitRsvp}>
+                  <label>
+                    NOME DO JOGADOR
+                    <input
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      value={guestName}
+                      onChange={(event) => setGuestName(event.target.value)}
+                      placeholder="Digite seu nome"
+                      autoComplete="name"
+                    />
+                  </label>
+                  <label>
+                    QUANTOS JOGADORES?
+                    <select value={partySize} onChange={(event) => setPartySize(event.target.value)}>
+                      {Array.from({ length: config.rsvp.maxPartySize }, (_, index) => index + 1).map((amount) => (
+                        <option value={String(amount)} key={amount}>{amount} {amount === 1 ? "jogador" : "jogadores"}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button type="submit"><span aria-hidden="true">✓</span> PREPARAR CONFIRMAÇÃO</button>
+                </form>
+                <small>Confirme até {config.rsvp.deadline}. Seus dados não são armazenados neste site.</small>
+              </>
+            ) : (
+              <div className="success-state" role="status">
+                <div className="success-icon" aria-hidden="true">✓</div>
+                <p className="eyebrow">RESPOSTA PREPARADA</p>
+                <h2>FALTA SÓ <span>ENVIAR!</span></h2>
+                <p>{guestName}, abra o WhatsApp e envie a mensagem para concluir sua confirmação.</p>
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">CONFIRMAR PELO WHATSAPP</a>
+                <button type="button" onClick={() => setRsvpPrepared(false)}>ALTERAR RESPOSTA</button>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <footer>
+          <span className="footer-cube" aria-hidden="true" />
+          <p>Desenvolvido por Anderson Jhonatan da K2 Tech</p>
+          <a href="/privacidade">Privacidade</a>
+          <small>Projeto temático demonstrativo, não afiliado nem patrocinado pela Roblox Corporation.</small>
+        </footer>
+      </div>
+    </main>
+  );
+}
